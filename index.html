@@ -768,6 +768,25 @@ function restoreSession(){
 }
 renderAll();
 restoreSession();
+
+/* ====================== AUTO-AKTUALIZACJA ====================== */
+/* Service worker pobiera najnowszą wersję apki przy każdym otwarciu z internetem,
+   więc nie trzeba usuwać i dodawać skrótu po każdej zmianie. */
+if("serviceWorker" in navigator){
+  // Jeśli apka jest już kontrolowana przez SW, a pojawi się nowa wersja —
+  // przeładuj raz, żeby od razu działała najnowsza.
+  if(navigator.serviceWorker.controller){
+    let reloaded=false;
+    navigator.serviceWorker.addEventListener("controllerchange",()=>{
+      if(reloaded)return;reloaded=true;location.reload();
+    });
+  }
+  navigator.serviceWorker.register("sw.js").then(reg=>{
+    reg.update();
+    // Co jakiś czas sprawdź, czy jest nowa wersja (gdy apka długo otwarta).
+    setInterval(()=>reg.update(),60*60*1000);
+  }).catch(()=>{});
+}
 </script>
 </body>
 </html>
