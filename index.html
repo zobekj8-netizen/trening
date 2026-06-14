@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#ffffff">
+<title>FitDom — plan treningowy</title>
+<style>
+  :root{
+    --bg:#f5f5f7;
+    --card:#ffffff;
+    --card2:#fafafb;
+    --ink:#1f1f27;
+    --ink2:#3b3b46;
+    --muted:#9595a2;
+    --line:#ececf1;
+    --line2:#e3e3ea;
+    --accent:#ff5d8f;
+    --accent-soft:#ffeaf1;
+    --blue:#4f86ef;
+    --green:#23bd8a;
+    --amber:#e8963a;
+    --teal:#2bb0a6;
+    --shadow:0 1px 2px rgba(20,20,40,.04),0 6px 24px rgba(20,20,40,.05);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+  html{height:100%}
+  body{
+    min-height:100%;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.55;
+    overflow-x:hidden;-webkit-font-smoothing:antialiased;
+    padding-bottom:calc(110px + env(safe-area-inset-bottom,0px));
+  }
+  .wrap{max-width:540px;margin:0 auto;padding:0 18px}
+
+  header{padding:30px 18px 16px;max-width:540px;margin:0 auto}
+  .kicker{font-size:11px;letter-spacing:2.5px;color:var(--accent);font-weight:700;text-transform:uppercase}
+  .title{font-size:27px;font-weight:800;letter-spacing:-.5px;margin-top:5px}
+  .subtitle{color:var(--muted);font-size:14px;margin-top:3px}
+
+  .stats{display:flex;gap:10px;margin-top:20px}
+  .stat{flex:1;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:13px 10px;text-align:center;box-shadow:var(--shadow)}
+  .stat b{display:block;font-size:24px;font-weight:800;letter-spacing:-.5px}
+  .stat small{color:var(--muted);font-size:11px;font-weight:600}
+
+  .view{display:none;animation:fade .25s ease}
+  .view.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  h2.section{font-size:12px;text-transform:uppercase;letter-spacing:1.6px;color:var(--muted);font-weight:700;margin:26px 0 12px}
+
+  .note{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;font-size:13.5px;color:var(--ink2);margin-bottom:6px;box-shadow:var(--shadow)}
+  .note b{color:var(--ink);font-weight:700}
+
+  /* DAY CARDS */
+  .day{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:12px;position:relative;cursor:pointer;transition:transform .14s,box-shadow .14s;box-shadow:var(--shadow);overflow:hidden}
+  .day:active{transform:scale(.99)}
+  .day .accent-dot{width:34px;height:34px;border-radius:10px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--accent);font-size:15px}
+  .day.b .accent-dot{background:#e9f1ff;color:var(--blue)}
+  .day.c .accent-dot{background:#e2f7ef;color:var(--green)}
+  .day .row{display:flex;align-items:center;gap:13px}
+  .day h3{font-size:17px;font-weight:800;letter-spacing:-.3px}
+  .day .meta{color:var(--muted);font-size:13px;margin-top:1px}
+  .day .meta .done{color:var(--green);font-weight:700}
+  .day .chev{margin-left:auto;color:var(--line2);font-size:22px;font-weight:300}
+  .day.done-today{border-color:#cdeede}
+
+  /* WORKOUT */
+  #workoutHead{margin:18px 0 6px}
+  #workoutHead .tag{font-size:11px;font-weight:700;letter-spacing:1.4px;color:var(--accent);text-transform:uppercase}
+  #workoutHead h2{font-size:23px;font-weight:800;letter-spacing:-.5px}
+  .progressbar{height:7px;background:var(--line);border-radius:99px;overflow:hidden;margin:12px 0 4px}
+  .progressbar i{display:block;height:100%;width:0;background:var(--accent);border-radius:99px;transition:width .4s}
+
+  .seclabel{font-size:12px;text-transform:uppercase;letter-spacing:1.4px;font-weight:700;color:var(--muted);margin:22px 0 12px;display:flex;align-items:center;gap:8px}
+  .seclabel::before{content:"";width:18px;height:2px;border-radius:2px;background:var(--accent)}
+  .seclabel.warm::before{background:var(--amber)} .seclabel.stretch::before{background:var(--teal)}
+
+  .ex{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:12px;transition:opacity .2s;box-shadow:var(--shadow)}
+  .ex.checked{opacity:.5}
+  .ex .top{display:flex;align-items:flex-start;gap:12px}
+  .ex .num{flex-shrink:0;width:28px;height:28px;border-radius:9px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px}
+  .ex.b .num{background:#e9f1ff;color:var(--blue)} .ex.c .num{background:#e2f7ef;color:var(--green)}
+  .ex.w .num{background:#fdf0e0;color:var(--amber)} .ex.s .num{background:#e1f4f2;color:var(--teal)}
+  .ex h4{font-size:16px;font-weight:800;letter-spacing:-.3px}
+  .ex .sr{font-size:13px;color:var(--accent);font-weight:700;margin-top:1px}
+  .ex.b .sr{color:var(--blue)} .ex.c .sr{color:var(--green)} .ex.w .sr{color:var(--amber)} .ex.s .sr{color:var(--teal)}
+  .ex .cue{font-size:13px;color:var(--ink2);margin-top:10px}
+  .ex .cue b{color:var(--ink);font-weight:700}
+  .ex .acts{display:flex;gap:8px;margin-top:14px}
+  .btn{flex:1;border:none;border-radius:11px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:background .15s}
+  .btn.ghost{background:var(--card2);color:var(--ink2);border:1px solid var(--line2)}
+  .btn.ghost:active{background:#f0f0f4}
+  .btn.fill{background:var(--accent);color:#fff}
+  .ex.checked .btn.fill{background:var(--green)}
+
+  .animbox{margin:13px 0 2px;background:linear-gradient(180deg,#fbfbfc,#f4f4f7);border:1px solid var(--line);border-radius:14px;overflow:hidden;position:relative}
+  .animbox .hint{position:absolute;top:8px;right:11px;font-size:9.5px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;font-weight:700}
+  .figsvg{width:100%;height:148px;display:block}
+  .figsvg .torso{fill:none;stroke:var(--accent);stroke-width:22;stroke-linecap:round}
+  .figsvg .limbs{fill:none;stroke:#ff9bbd;stroke-width:12.5;stroke-linecap:round;stroke-linejoin:round}
+  .figsvg .limbB{fill:none;stroke:#ef5f8e;stroke-width:11;stroke-linecap:round;stroke-linejoin:round;opacity:.5}
+  .figsvg .head{fill:var(--accent)}
+  .figsvg .ground{stroke:#dededf;stroke-width:3;stroke-linecap:round}
+  .ex.b .figsvg .torso{stroke:var(--blue)} .ex.b .figsvg .limbs{stroke:#9cc0fb} .ex.b .figsvg .limbB{stroke:#3f78e6} .ex.b .figsvg .head{fill:var(--blue)}
+  .ex.c .figsvg .torso{stroke:var(--green)} .ex.c .figsvg .limbs{stroke:#7fdcbb} .ex.c .figsvg .limbB{stroke:#1aa376} .ex.c .figsvg .head{fill:var(--green)}
+  .ex.w .figsvg .torso{stroke:var(--amber)} .ex.w .figsvg .limbs{stroke:#f3c486} .ex.w .figsvg .limbB{stroke:#d27f24} .ex.w .figsvg .head{fill:var(--amber)}
+  .ex.s .figsvg .torso{stroke:var(--teal)} .ex.s .figsvg .limbs{stroke:#84d6cf} .ex.s .figsvg .limbB{stroke:#1f998f} .ex.s .figsvg .head{fill:var(--teal)}
+
+  .finishbar{margin:8px 0 20px}
+  .btn.big{width:100%;padding:16px;font-size:15px;border-radius:15px;background:var(--accent);color:#fff;border:none;font-weight:800;cursor:pointer;font-family:inherit}
+  .btn.big:disabled{background:var(--line);color:var(--muted)}
+
+  /* TIMER MODAL */
+  .modal{position:fixed;inset:0;background:rgba(30,30,45,.32);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:50;padding:24px}
+  .modal.open{display:flex}
+  .timerbox{background:var(--card);border-radius:24px;padding:26px;text-align:center;width:100%;max-width:330px;box-shadow:0 20px 60px rgba(20,20,40,.2)}
+  .timerbox .lbl{color:var(--ink);font-size:14px;font-weight:700}
+  .dial{position:relative;width:190px;height:190px;margin:16px auto 8px}
+  .dial svg{transform:rotate(-90deg)}
+  .dial .time{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:44px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-1px}
+  .timerbox .row{display:flex;gap:7px;margin-top:6px}
+  .chip{flex:1;background:var(--card2);border:1px solid var(--line2);color:var(--ink2);border-radius:10px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+  .chip.active{background:var(--accent);border-color:var(--accent);color:#fff}
+  .timerbox .ctrl{display:flex;gap:8px;margin-top:14px}
+
+  /* PROGRESS */
+  .week{display:flex;gap:7px;margin:4px 0 8px}
+  .dot{flex:1;border-radius:13px;background:var(--card);border:1px solid var(--line);padding:14px 4px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:var(--muted);box-shadow:var(--shadow)}
+  .dot b{font-size:16px;color:var(--ink)}
+  .dot.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .dot.on b{color:#fff}
+  .plan-week{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:15px;margin-bottom:9px;box-shadow:var(--shadow)}
+  .plan-week h4{font-size:14.5px;font-weight:800}
+  .plan-week h4 span{color:var(--accent);font-size:12px;font-weight:700}
+  .plan-week p{font-size:13px;color:var(--ink2);margin-top:2px}
+  .log{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:13px 15px;margin-bottom:8px;display:flex;justify-content:space-between;font-size:13.5px;box-shadow:var(--shadow)}
+  .log .d{color:var(--muted)}
+  .empty{text-align:center;color:var(--muted);font-size:14px;padding:34px 10px}
+  .reset{margin-top:10px;background:none;border:1px solid var(--line2);color:var(--muted);border-radius:11px;padding:11px;width:100%;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}
+
+  .tip{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px;margin-bottom:9px;font-size:13.5px;box-shadow:var(--shadow)}
+  .tip h4{font-size:14px;margin-bottom:4px;font-weight:800}
+  .tip p{color:var(--ink2)}
+
+  /* NAV */
+  nav{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.9);backdrop-filter:blur(16px);border-top:1px solid var(--line);z-index:40}
+  nav .wrap2{max-width:540px;margin:0 auto;display:flex;padding-bottom:env(safe-area-inset-bottom,0px)}
+  nav button{flex:1;background:none;border:none;color:var(--muted);padding:11px 0 16px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:4px}
+  nav button svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  nav button.active{color:var(--accent)}
+
+  .toast{position:fixed;bottom:92px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;font-weight:700;padding:12px 22px;border-radius:99px;font-size:14px;opacity:0;transition:.3s;z-index:60;pointer-events:none;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="kicker">Plan treningowy</div>
+  <div class="title">Twój trening w domu</div>
+  <div class="subtitle">Ujędrnianie sylwetki · poziom początkujący · 3× w tygodniu</div>
+  <div class="stats">
+    <div class="stat"><b id="stStreak">0</b><small>seria (tyg.)</small></div>
+    <div class="stat"><b id="stTotal">0</b><small>treningów</small></div>
+    <div class="stat"><b id="stWeek">0/3</b><small>w tym tyg.</small></div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- PLAN -->
+  <section id="v-plan" class="view active">
+    <div class="note">Wybierz dzień, aby rozpocząć. Każdy trening ma trzy części: <b>rozgrzewka, ćwiczenia główne i rozciąganie</b> — wszystkie z animacją i timerem. Ćwicz powoli i z kontrolą; technika jest ważniejsza niż tempo.</div>
+
+    <h2 class="section">Twój tydzień</h2>
+    <div id="dayList"></div>
+
+    <h2 class="section">Wskazówki</h2>
+    <div class="tip"><h4>Oddech</h4><p>Wydech podczas wysiłku (gdy wstajesz, pchasz), wdech przy schodzeniu. Nie wstrzymuj oddechu.</p></div>
+    <div class="tip"><h4>Tempo</h4><p>Fazę schodzenia (w dół) wykonuj wolno, przez 2–3 sekundy. To ona najmocniej ujędrnia mięśnie.</p></div>
+    <div class="tip"><h4>Regeneracja i dieta</h4><p>Pij ok. 2 l wody dziennie, jedz białko (jajka, twaróg, kurczak, strączki) i wysypiaj się. Sylwetka zmienia się w czasie odpoczynku.</p></div>
+    <div class="tip"><h4>Rytm tygodnia</h4><p>Trenuj np. poniedziałek, środa, piątek — z dniem przerwy między sesjami.</p></div>
+  </section>
+
+  <!-- WORKOUT -->
+  <section id="v-workout" class="view">
+    <div id="workoutHead"></div>
+    <div class="progressbar"><i id="wProg"></i></div>
+    <div id="exList"></div>
+    <div class="finishbar">
+      <button class="btn big" id="finishBtn" disabled>Zakończ trening</button>
+    </div>
+  </section>
+
+  <!-- PROGRESS -->
+  <section id="v-progress" class="view">
+    <h2 class="section">Ten tydzień</h2>
+    <div class="week" id="weekDots"></div>
+
+    <h2 class="section">Plan progresji (8 tygodni)</h2>
+    <div class="plan-week"><h4>Tydzień 1–2 <span>· Adaptacja</span></h4><p>Naucz się techniki. Trzymaj się zaproponowanych serii, odpoczywaj 60–90 sek. między seriami.</p></div>
+    <div class="plan-week"><h4>Tydzień 3–4 <span>· Więcej powtórzeń</span></h4><p>Dodaj +2 powtórzenia do każdego ćwiczenia. Skróć przerwy do 45–60 sek.</p></div>
+    <div class="plan-week"><h4>Tydzień 5–6 <span>· Tempo i pauzy</span></h4><p>Schodzenie wydłuż do 3 sek. i dodaj 1-sekundową pauzę w najtrudniejszym punkcie.</p></div>
+    <div class="plan-week"><h4>Tydzień 7–8 <span>· Objętość</span></h4><p>Dodaj 4. serię do głównych ćwiczeń. Rozważ przejście na 4 treningi w tygodniu.</p></div>
+
+    <h2 class="section">Historia</h2>
+    <div id="logList"></div>
+    <button class="reset" id="resetBtn">Wyczyść wszystkie dane</button>
+  </section>
+
+</main>
+
+<!-- TIMER -->
+<div class="modal" id="timerModal">
+  <div class="timerbox">
+    <div class="lbl" id="timerLbl">Przerwa</div>
+    <div class="dial">
+      <svg width="190" height="190">
+        <circle cx="95" cy="95" r="82" stroke="#eeeef2" stroke-width="11" fill="none"/>
+        <circle id="ring" cx="95" cy="95" r="82" stroke="var(--accent)" stroke-width="11" fill="none" stroke-linecap="round" stroke-dasharray="515" stroke-dashoffset="0"/>
+      </svg>
+      <div class="time" id="timerTime">0:30</div>
+    </div>
+    <div class="row">
+      <button class="chip" data-sec="20">20s</button>
+      <button class="chip active" data-sec="30">30s</button>
+      <button class="chip" data-sec="45">45s</button>
+      <button class="chip" data-sec="60">60s</button>
+    </div>
+    <div class="ctrl">
+      <button class="btn ghost" id="timerClose">Zamknij</button>
+      <button class="btn fill" id="timerStart">Start</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="wrap2">
+    <button class="active" data-view="plan"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 4l9 6.5"/><path d="M5 9.5V20h14V9.5"/></svg>Plan</button>
+    <button data-view="workout"><svg viewBox="0 0 24 24"><path d="M6 9v6M18 9v6M4 11h2M18 11h2M6 12h12"/></svg>Trening</button>
+    <button data-view="progress"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 4-6"/></svg>Postępy</button>
+  </div>
+</nav>
+
+<script>
+/* ====================== ANIMACJE (rysunkowe sylwetki) ====================== */
+function P(a){
+  const [sh,hip,elb,hand,kA,anA,kB,anB]=a;
+  const off=(s)=>{const [x,y]=s.split(',').map(Number);return (x-7)+','+(y+2);};
+  return {
+    torso:`M${sh} L${hip}`,
+    limbs:`M${sh} L${elb} L${hand} M${hip} L${kA} L${anA} M${hip} L${kB} L${anB}`,
+    limbB:`M${sh} L${off(elb)} L${off(hand)}`
+  };
+}
+function fig(p1,p2,h1,h2,dur){
+  dur=(dur*1.25).toFixed(2);
+  const a=P(p1),b=P(p2);
+  const sp='calcMode="spline" keyTimes="0;0.5;1" keySplines="0.42 0 0.58 1;0.42 0 0.58 1"';
+  const an=(attr,v1,v2)=>`<animate attributeName="${attr}" dur="${dur}s" repeatCount="indefinite" values="${v1};${v2};${v1}" ${sp}/>`;
+  return `<svg viewBox="14 -12 172 140" class="figsvg" preserveAspectRatio="xMidYMid meet">
+    <line class="ground" x1="22" y1="120" x2="178" y2="120"/>
+    <path class="limbB" d="${a.limbB}">${an('d',a.limbB,b.limbB)}</path>
+    <path class="torso" d="${a.torso}">${an('d',a.torso,b.torso)}</path>
+    <path class="limbs" d="${a.limbs}">${an('d',a.limbs,b.limbs)}</path>
+    <circle class="head" cx="${h1[0]}" cy="${h1[1]}" r="12">${an('cx',h1[0],h2[0])}${an('cy',h1[1],h2[1])}</circle>
+  </svg>`;
+}
+const ANIM={
+  /* główne ćwiczenia */
+  squat: fig(["100,42","100,76","108,58","116,72","94,98","92,120","106,98","108,120"],["112,62","96,98","124,70","140,70","104,104","92,120","110,104","106,120"],[100,24],[114,46],2.4),
+  lunge: fig(["100,42","100,78","100,58","100,74","96,98","94,120","104,98","106,120"],["100,76","100,92","100,86","100,100","122,100","128,120","82,110","74,120"],[100,26],[100,60],2.4),
+  bridge: fig(["60,110","110,112","45,112","30,113","140,96","150,118","140,100","150,118"],["60,110","110,86","45,112","30,113","140,92","150,118","140,96","150,118"],[50,106],[50,106],2.4),
+  firehydrant: fig(["70,80","120,80","70,100","70,118","120,100","120,118","120,100","120,118"],["70,80","120,80","70,100","70,118","120,100","120,118","140,80","160,72"],[60,74],[60,74],1.8),
+  calf: fig(["100,40","100,78","100,58","100,74","96,98","96,118","104,98","104,118"],["100,32","100,70","100,50","100,66","96,90","96,116","104,90","104,116"],[100,24],[100,16],1.4),
+  plank: fig(["78,80","120,96","70,98","58,114","148,104","168,116","148,104","168,116"],["78,78","120,94","70,98","58,114","148,102","168,114","148,102","168,114"],[66,74],[66,72],3),
+  pushup: fig(["78,72","120,86","70,90","64,112","148,116","160,118","148,116","160,118"],["78,92","120,98","68,104","64,112","148,116","160,118","148,116","160,118"],[66,68],[66,88],1.8),
+  dips: fig(["100,70","100,96","118,80","132,80","70,100","50,118","70,100","50,118"],["100,84","100,110","116,90","132,80","68,112","50,118","68,112","50,118"],[100,56],[100,70],1.8),
+  superman: fig(["80,108","120,110","60,110","42,112","140,110","160,112","140,110","160,112"],["80,104","120,106","58,102","40,96","140,104","162,98","140,104","162,98"],[70,104],[70,98],2.4),
+  pike: fig(["85,80","110,60","78,96","72,116","135,92","150,116","135,92","150,116"],["82,96","110,64","76,108","72,116","135,92","150,116","135,92","150,116"],[78,70],[74,88],1.8),
+  shouldertap: fig(["80,76","120,90","74,92","68,112","146,98","166,112","146,98","166,112"],["80,76","120,90","92,72","104,70","146,98","166,112","146,98","166,112"],[68,70],[68,70],1.8),
+  twist: fig(["90,70","100,100","78,80","66,84","125,92","145,84","125,96","145,90"],["110,70","100,100","122,80","134,84","125,92","145,84","125,96","145,90"],[86,56],[114,56],1.6),
+  climber: fig(["75,76","118,88","70,94","65,112","140,94","160,108","144,96","164,110"],["75,76","118,88","70,94","65,112","104,96","90,104","144,96","164,110"],[63,72],[63,72],1.1),
+  birddog: fig(["80,80","120,80","76,100","74,116","95,100","95,118","120,100","120,118"],["80,80","120,80","64,76","48,70","95,100","95,118","142,86","162,80"],[70,74],[70,74],2.4),
+  sideplank: fig(["80,70","120,92","75,88","65,110","150,104","172,114","150,104","172,114"],["80,68","120,90","75,86","65,110","150,102","172,112","150,102","172,112"],[70,62],[70,60],3),
+  /* rozgrzewka */
+  highknees: fig(["100,42","100,76","86,58","78,70","108,86","118,96","96,98","94,120"],["100,42","100,76","114,58","122,70","100,98","100,120","96,98","94,120"],[100,24],[100,24],1.0),
+  armcircles: fig(["100,44","100,78","110,28","120,16","96,99","94,120","104,99","106,120"],["100,44","100,78","110,62","120,82","96,99","94,120","104,99","106,120"],[100,26],[100,26],1.7),
+  hipcircles: fig(["96,42","108,74","100,58","108,72","96,100","96,120","112,100","112,120"],["104,42","92,74","100,58","92,72","88,100","88,120","104,100","104,120"],[96,24],[104,24],1.9),
+  jacks: fig(["100,40","100,76","100,56","100,72","100,98","100,120","100,98","100,120"],["100,38","100,74","112,26","120,14","86,104","78,120","114,104","122,120"],[100,22],[100,20],0.8),
+  legswing: fig(["100,42","100,78","108,60","116,74","96,98","96,120","104,96","104,120"],["100,42","100,78","108,60","116,74","96,98","96,120","118,92","134,86"],[100,24],[100,24],1.3),
+  /* rozciąganie */
+  forwardfold: fig(["100,46","100,78","110,60","118,74","98,99","98,120","102,99","102,120"],["120,86","100,80","120,100","118,118","98,99","98,120","102,99","102,120"],[100,28],[124,90],3.0),
+  quadstretch: fig(["100,42","100,78","104,66","98,80","96,98","96,120","108,90","100,76"],["100,42","100,78","104,68","98,82","96,98","96,120","110,92","102,78"],[100,24],[100,24],3.0),
+  kneehug: fig(["70,110","115,112","100,100","118,92","120,92","108,100","140,114","165,116"],["70,110","115,112","98,98","116,88","118,88","104,96","140,114","165,116"],[58,108],[58,108],3.0),
+  catcow: fig(["75,82","120,80","72,100","72,118","120,100","120,118","120,100","120,118"],["75,84","120,84","72,100","72,118","120,100","120,118","120,100","120,118"],[64,90],[64,68],2.6),
+  chest: fig(["100,44","100,78","112,58","122,66","96,99","96,120","104,99","104,120"],["100,44","100,78","86,60","74,70","96,99","96,120","104,99","104,120"],[100,26],[100,26],2.6),
+  childpose: fig(["80,108","118,96","62,108","44,108","118,96","148,112","118,96","148,112"],["80,106","118,94","62,106","44,106","118,94","148,110","118,94","148,110"],[68,108],[68,106],3.0)
+};
+const ANIMOF={
+  "Przysiady":"squat","Wykroki w przód":"lunge","Mostek biodrowy":"bridge",
+  "Odwodzenie nogi (fire hydrant)":"firehydrant","Wspięcia na palce":"calf","Plank (deska)":"plank",
+  "Pompki na kolanach":"pushup","Dipy na triceps (z krzesła)":"dips","Superman":"superman",
+  "Pompki 'pike' (na barki)":"pike","Plank z dotykaniem barków":"shouldertap","Russian twists":"twist",
+  "Przysiad pulsacyjny":"squat","Wykroki w tył":"lunge","Mostek jednonóż":"bridge",
+  "Mountain climbers":"climber","Bird dog":"birddog","Plank boczny":"sideplank"
+};
+
+/* ====================== ROZGRZEWKA / ROZCIĄGANIE ====================== */
+const WARMUP=[
+  {n:"Marsz z wysokimi kolanami",t:40,anim:"highknees",yt:"marsz wysokie kolana rozgrzewka",cue:"Maszeruj w miejscu, unosząc kolana wysoko. Tempo spokojne, rozgrzej całe ciało."},
+  {n:"Krążenia ramion",t:30,anim:"armcircles",yt:"krążenia ramion rozgrzewka",cue:"Duże, powolne koła ramionami — 15 sek. w przód i 15 sek. w tył. Rozgrzewa barki."},
+  {n:"Krążenia bioder",t:30,anim:"hipcircles",yt:"krążenia bioder rozgrzewka",cue:"Dłonie na biodrach, zataczaj duże koła miednicą. Połowę czasu w jedną, połowę w drugą stronę."},
+  {n:"Wymachy nóg",t:30,anim:"legswing",yt:"wymachy nóg rozgrzewka biodra",cue:"Przytrzymaj się ściany i wymachuj wyprostowaną nogą w przód i w tył. Po 15 sek. na nogę."},
+  {n:"Pajacyki",t:30,anim:"jacks",yt:"pajacyki ćwiczenie",cue:"Klasyczne pajacyki — pobudzają krążenie i podnoszą tętno przed treningiem."}
+];
+const COOLDOWN=[
+  {n:"Skłon w przód do nóg",t:30,anim:"forwardfold",yt:"skłon do nóg rozciąganie tył ud",cue:"Stojąc, powoli opuść tułów w dół, sięgając dłońmi do stóp. <b>Nie szarp</b> — zwiśnij swobodnie. Rozciąga tył nóg i plecy."},
+  {n:"Rozciąganie przodu uda",t:30,anim:"quadstretch",yt:"rozciąganie czworogłowego uda stojąc",cue:"Stań na jednej nodze, drugą piętą przyciągnij do pośladka i przytrzymaj. 30 sek. na każdą nogę. Trzymaj się ściany dla równowagi."},
+  {n:"Kolano do klatki",t:30,anim:"kneehug",yt:"przyciąganie kolana do klatki rozciąganie pośladka",cue:"Leżąc na plecach, przyciągnij jedno kolano do klatki i przytrzymaj. 30 sek. na nogę. Rozluźnia pośladki i dolne plecy."},
+  {n:"Koci grzbiet (kot–krowa)",t:40,anim:"catcow",yt:"kot krowa kręgosłup ćwiczenie",cue:"W klęku podpartym na zmianę zaokrąglaj plecy w górę (głowa w dół) i wyginaj w dół (głowa w górę). Powoli, z oddechem."},
+  {n:"Otwieranie klatki i barków",t:30,anim:"chest",yt:"rozciąganie klatki piersiowej barków",cue:"Splot dłonie za plecami i delikatnie unieś ręce, otwierając klatkę. Albo oprzyj przedramię o ścianę i odwróć tułów."},
+  {n:"Pozycja dziecka",t:40,anim:"childpose",yt:"pozycja dziecka rozciąganie pleców",cue:"Usiądź na piętach, połóż tułów na udach, ręce wyciągnij w przód. Głęboko oddychaj — rozluźnia plecy i wycisza."}
+];
+
+/* ====================== PLAN ====================== */
+const PLAN={
+  A:{key:"A",cls:"",tag:"Dzień 1",title:"Nogi i pośladki",desc:"Przysiady, wykroki i mostki — modelowanie dolnych partii.",ex:[
+    {n:"Przysiady",sr:"4 serie × 12 powt.",yt:"przysiad technika poprawna jak robić",cue:"Stopy na szerokość bioder, kolana w kierunku palców. Schodź jak na krzesło, plecy proste, ciężar na piętach. <b>Czuj pośladki przy wstawaniu.</b>"},
+    {n:"Wykroki w przód",sr:"3 serie × 10 / nogę",yt:"wykroki w przód technika ćwiczenie",cue:"Duży krok w przód, oba kolana zginasz do 90°. Tylne kolano blisko podłogi. <b>Tułów wyprostowany.</b>"},
+    {n:"Mostek biodrowy",sr:"4 serie × 15 powt.",yt:"mostek biodrowy glute bridge technika",cue:"Leżąc, stopy przy pośladkach. Unieś biodra wysoko i <b>maksymalnie napnij pośladki na górze</b>, przytrzymaj 1 sek."},
+    {n:"Odwodzenie nogi (fire hydrant)",sr:"3 serie × 12 / nogę",yt:"fire hydrant ćwiczenie pośladki technika",cue:"Klęk podparty, odwodzisz ugiętą nogę w bok jak najwyżej. Biodra stabilne, nie obracaj tułowia."},
+    {n:"Wspięcia na palce",sr:"3 serie × 20 powt.",yt:"wspięcia na palce łydki ćwiczenie",cue:"Stań prosto, powoli unieś się na palcach jak najwyżej, opuść z kontrolą. Modeluje łydki."},
+    {n:"Plank (deska)",sr:"3 serie × 25 sek.",yt:"plank deska technika poprawna",cue:"Podpór na przedramionach, ciało w linii prostej. <b>Napnij brzuch i pośladki</b>, nie zwieszaj bioder. Użyj timera."}
+  ]},
+  B:{key:"B",cls:"b",tag:"Dzień 2",title:"Góra ciała i brzuch",desc:"Pompki, dipy i core — smukłe ramiona, mocny brzuch.",ex:[
+    {n:"Pompki na kolanach",sr:"4 serie × 8–10 powt.",yt:"pompki na kolanach technika dla początkujących",cue:"Dłonie szerzej niż barki, kolana na podłodze. Schodź klatką do ziemi, <b>łokcie pod kątem 45°</b>. Plecy proste."},
+    {n:"Dipy na triceps (z krzesła)",sr:"3 serie × 10 powt.",yt:"dipy na triceps z krzesła technika",cue:"Dłonie na krześle za sobą, zginaj łokcie w tył, opuszczaj biodra w dół. Łokcie wąsko, blisko ciała."},
+    {n:"Superman",sr:"3 serie × 12 powt.",yt:"superman ćwiczenie plecy technika",cue:"Leżąc na brzuchu, unieś jednocześnie ręce i nogi. Napnij plecy i pośladki, przytrzymaj 1 sek."},
+    {n:"Pompki 'pike' (na barki)",sr:"3 serie × 8 powt.",yt:"pike push up pompki na barki technika",cue:"Pozycja litery V (biodra wysoko), opuszczaj głowę między dłonie. Modeluje ramiona. Łatwiej z kolan."},
+    {n:"Plank z dotykaniem barków",sr:"3 serie × 10 / strona",yt:"plank shoulder taps dotykanie barków",cue:"W desce dotykaj dłonią przeciwnego barku. <b>Biodra nieruchome</b> — nie kołysz się. Stopy szerzej = łatwiej."},
+    {n:"Russian twists",sr:"3 serie × 20 (po 10/str.)",yt:"russian twists rosyjskie skręty technika",cue:"Siad, tułów odchylony, stopy uniesione lub na podłodze. Obracaj tułów raz w lewo, raz w prawo. Skosy brzucha."}
+  ]},
+  C:{key:"C",cls:"c",tag:"Dzień 3",title:"Całe ciało i cardio",desc:"Dynamiczny obwód spalający i ujędrniający całe ciało.",ex:[
+    {n:"Przysiad pulsacyjny",sr:"4 serie × 15 powt.",yt:"przysiad pulsacyjny pulse squat ćwiczenie",cue:"Zejdź do przysiadu i 'pulsuj' małymi ruchami w dolnej części. Pośladki cały czas napięte."},
+    {n:"Wykroki w tył",sr:"3 serie × 10 / nogę",yt:"wykroki w tył reverse lunge technika",cue:"Krok w tył do wykroku, wróć do startu. Łagodniejsze dla kolan niż wykroki w przód. Tułów prosto."},
+    {n:"Mostek jednonóż",sr:"3 serie × 10 / nogę",yt:"mostek biodrowy jednonóż single leg glute bridge",cue:"Mostek biodrowy z jedną nogą wyprostowaną w górę. Napnij pośladek nogi podporowej."},
+    {n:"Mountain climbers",sr:"3 serie × 20 (po 10/nogę)",yt:"mountain climbers technika ćwiczenie",cue:"W podporze przyciągaj kolana na zmianę do klatki. Tempo żwawe, brzuch napięty — cardio i brzuch."},
+    {n:"Bird dog",sr:"3 serie × 10 / strona",yt:"bird dog ćwiczenie technika",cue:"Klęk podparty, wyciągnij przeciwną rękę i nogę w linii ciała, przytrzymaj 2 sek. Stabilizacja."},
+    {n:"Plank boczny",sr:"3 serie × 20 sek. / strona",yt:"plank boczny side plank technika",cue:"Podpór na jednym przedramieniu, ciało bokiem w linii prostej. Biodra wysoko. Z kolan, jeśli za trudno."}
+  ]}
+};
+const ORDER=["A","B","C"];
+
+/* ====================== STAN ====================== */
+const KEY="fitdom_v2";
+function loadS(){try{return JSON.parse(localStorage.getItem(KEY))||{log:[]}}catch(e){return{log:[]}}}
+function saveS(s){localStorage.setItem(KEY,JSON.stringify(s))}
+let state=loadS();
+let currentDay=null,sessionDone=new Set();
+
+function weekKey(d=new Date()){
+  const t=new Date(d);t.setHours(0,0,0,0);
+  t.setDate(t.getDate()+3-((t.getDay()+6)%7));
+  const w1=new Date(t.getFullYear(),0,4);
+  const wk=1+Math.round(((t-w1)/86400000-3+((w1.getDay()+6)%7))/7);
+  return t.getFullYear()+"-W"+wk;
+}
+function thisWeekLogs(){const wk=weekKey();return state.log.filter(l=>l.wk===wk)}
+
+/* ====================== RENDER ====================== */
+function renderStats(){
+  document.getElementById('stTotal').textContent=state.log.length;
+  document.getElementById('stWeek').textContent=Math.min(thisWeekLogs().length,3)+"/3";
+  let streak=0,d=new Date();
+  for(let i=0;i<52;i++){
+    const wk=weekKey(d);
+    if(state.log.some(l=>l.wk===wk))streak++;
+    else if(i>0)break;
+    d.setDate(d.getDate()-7);
+  }
+  document.getElementById('stStreak').textContent=streak;
+}
+function renderDays(){
+  const wrap=document.getElementById('dayList');wrap.innerHTML="";
+  const tw=thisWeekLogs();
+  ORDER.forEach((k,idx)=>{
+    const d=PLAN[k],did=tw.some(l=>l.day===k);
+    const el=document.createElement('div');
+    el.className="day "+d.cls+(did?" done-today":"");
+    el.innerHTML=`<div class="row">
+        <div class="accent-dot">${idx+1}</div>
+        <div>
+          <h3>${d.title}</h3>
+          <div class="meta">${d.ex.length} ćwiczeń · ~35 min ${did?'· <span class="done">zrobione</span>':''}</div>
+        </div>
+        <div class="chev">›</div>
+      </div>`;
+    el.onclick=()=>startWorkout(k);
+    wrap.appendChild(el);
+  });
+}
+function seclabel(txt,cls){const e=document.createElement('div');e.className="seclabel "+(cls||"");e.textContent=txt;return e;}
+
+function timedCard(item,cls,num){
+  const an=ANIM[item.anim]||"";
+  const el=document.createElement('div');
+  el.className="ex "+cls;
+  el.innerHTML=`<div class="top">
+      <div class="num">${num}</div>
+      <div><h4>${item.n}</h4><div class="sr">${item.t} sek.</div></div>
+    </div>
+    ${an?`<div class="animbox"><span class="hint">animacja</span>${an}</div>`:""}
+    <div class="cue">${item.cue}</div>
+    <div class="acts">
+      <button class="btn ghost vid">Film</button>
+      <button class="btn fill tm">Start ${item.t}s</button>
+    </div>`;
+  el.querySelector('.vid').onclick=()=>showVideo(item);
+  el.querySelector('.tm').onclick=()=>openTimer(item.n,item.t);
+  return el;
+}
+function startWorkout(k){
+  currentDay=k;sessionDone=new Set();
+  const d=PLAN[k];
+  document.getElementById('workoutHead').innerHTML=`<div class="tag">${d.tag}</div><h2>${d.title}</h2>`;
+  const list=document.getElementById('exList');list.innerHTML="";
+
+  list.appendChild(seclabel("Rozgrzewka · ~3 min","warm"));
+  WARMUP.forEach((w,i)=>list.appendChild(timedCard(w,"w",i+1)));
+
+  list.appendChild(seclabel("Ćwiczenia główne"));
+  d.ex.forEach((e,i)=>{
+    const an=ANIM[ANIMOF[e.n]]||"";
+    const el=document.createElement('div');
+    el.className="ex "+d.cls;el.dataset.i=i;
+    el.innerHTML=`<div class="top">
+        <div class="num">${i+1}</div>
+        <div><h4>${e.n}</h4><div class="sr">${e.sr}</div></div>
+      </div>
+      ${an?`<div class="animbox"><span class="hint">animacja</span>${an}</div>`:""}
+      <div class="cue">${e.cue}</div>
+      <div class="acts">
+        <button class="btn ghost vid">Film</button>
+        <button class="btn ghost tm">Czas</button>
+        <button class="btn fill ck">Zrobione</button>
+      </div>`;
+    el.querySelector('.vid').onclick=()=>showVideo(e);
+    el.querySelector('.tm').onclick=()=>openTimer(e.n,30);
+    el.querySelector('.ck').onclick=()=>toggleEx(i,el);
+    list.appendChild(el);
+  });
+
+  list.appendChild(seclabel("Rozciąganie · ~4 min","stretch"));
+  COOLDOWN.forEach((c,i)=>list.appendChild(timedCard(c,"s",i+1)));
+
+  updateWProg();
+  document.getElementById('finishBtn').onclick=finishWorkout;
+  switchView('workout');
+}
+function toggleEx(i,el){
+  if(sessionDone.has(i)){sessionDone.delete(i);el.classList.remove('checked');el.querySelector('.ck').textContent="Zrobione";}
+  else{sessionDone.add(i);el.classList.add('checked');el.querySelector('.ck').textContent="Ukończone";if(navigator.vibrate)navigator.vibrate(12);}
+  updateWProg();
+}
+function updateWProg(){
+  const total=PLAN[currentDay].ex.length;
+  const pct=Math.round(sessionDone.size/total*100);
+  document.getElementById('wProg').style.width=pct+"%";
+  const left=total-sessionDone.size;
+  const btn=document.getElementById('finishBtn');
+  btn.disabled=left>0;
+  btn.textContent=left>0?`Zostało ${left} ćwiczeń`:"Zakończ trening";
+}
+function finishWorkout(){
+  state.log.unshift({day:currentDay,wk:weekKey(),ts:Date.now()});
+  saveS(state);renderStats();renderDays();renderProgress();
+  toast("Brawo! Trening zaliczony");
+  if(navigator.vibrate)navigator.vibrate([25,35,25]);
+  switchView('plan');
+}
+
+/* ====================== PROGRESS ====================== */
+function renderProgress(){
+  const wd=document.getElementById('weekDots');wd.innerHTML="";
+  const tw=thisWeekLogs();
+  ORDER.forEach(k=>{
+    const did=tw.some(l=>l.day===k);
+    const name=PLAN[k].cls==''?'Nogi':PLAN[k].cls=='b'?'Góra':'Cardio';
+    const el=document.createElement('div');
+    el.className="dot"+(did?' on':'');
+    el.innerHTML=`<b>${did?'✓':'·'}</b>${name}`;
+    wd.appendChild(el);
+  });
+  const ll=document.getElementById('logList');
+  if(!state.log.length){ll.innerHTML='<div class="empty">Brak treningów. Zacznij dziś.</div>';return;}
+  ll.innerHTML="";
+  state.log.slice(0,20).forEach(l=>{
+    const d=new Date(l.ts),el=document.createElement('div');el.className="log";
+    el.innerHTML=`<span><b>${PLAN[l.day].title}</b></span><span class="d">${d.toLocaleDateString('pl-PL',{day:'numeric',month:'short'})}, ${d.toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'})}</span>`;
+    ll.appendChild(el);
+  });
+}
+
+/* ====================== FILMY ====================== */
+function showVideo(e){
+  const q=encodeURIComponent((e.yt||e.n)+" instruktaż");
+  window.open("https://www.youtube.com/results?search_query="+q,"_blank");
+}
+
+/* ====================== TIMER ====================== */
+let tInt=null,tLeft=30,tDur=30,tRunning=false;const ringLen=515;
+function openTimer(name,secs){
+  document.getElementById('timerLbl').textContent=name||"Przerwa";
+  document.getElementById('timerModal').classList.add('open');
+  const s=secs||30;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('active',+c.dataset.sec===s));
+  setDur(s);
+}
+function setDur(s){tDur=s;tLeft=s;drawT();}
+function fmt(s){return Math.floor(s/60)+":"+String(s%60).padStart(2,'0')}
+function drawT(){document.getElementById('timerTime').textContent=fmt(tLeft);document.getElementById('ring').style.strokeDashoffset=ringLen*(1-tLeft/tDur);}
+function startTimer(){
+  if(tRunning){clearInterval(tInt);tRunning=false;document.getElementById('timerStart').textContent="Wznów";return;}
+  tRunning=true;document.getElementById('timerStart').textContent="Pauza";
+  tInt=setInterval(()=>{
+    tLeft--;drawT();
+    if(tLeft<=0){clearInterval(tInt);tRunning=false;document.getElementById('timerStart').textContent="Start";document.getElementById('timerTime').textContent="Koniec";beep();if(navigator.vibrate)navigator.vibrate([90,50,90]);tLeft=tDur;}
+  },1000);
+}
+function beep(){try{const a=new(window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),g=a.createGain();o.connect(g);g.connect(a.destination);o.frequency.value=820;o.type='sine';g.gain.setValueAtTime(.25,a.currentTime);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+.5);o.start();o.stop(a.currentTime+.5);}catch(e){}}
+document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{document.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));c.classList.add('active');clearInterval(tInt);tRunning=false;document.getElementById('timerStart').textContent="Start";setDur(+c.dataset.sec);});
+document.getElementById('timerStart').onclick=startTimer;
+document.getElementById('timerClose').onclick=()=>{clearInterval(tInt);tRunning=false;document.getElementById('timerStart').textContent="Start";document.getElementById('timerModal').classList.remove('open');};
+
+/* ====================== NAV ====================== */
+function switchView(v){
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+  document.getElementById('v-'+v).classList.add('active');
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
+  if(b.dataset.view==='workout'&&!currentDay){startWorkout(ORDER[0]);return;}
+  switchView(b.dataset.view);
+});
+
+/* ====================== TOAST + RESET ====================== */
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+document.getElementById('resetBtn').onclick=()=>{if(confirm("Wyczyścić całą historię i postępy?")){state={log:[]};saveS(state);renderStats();renderDays();renderProgress();toast("Dane wyczyszczone");}};
+
+/* ====================== INIT ====================== */
+renderStats();renderDays();renderProgress();
+</script>
+</body>
+</html>
