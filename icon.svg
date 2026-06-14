@@ -1,10 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#7f8c66"/>
-  <!-- serif F -->
-  <text x="262" y="400" font-family="Georgia, 'Times New Roman', serif" font-size="320" font-weight="500" fill="#fdfbf7" text-anchor="middle">F</text>
-  <!-- listek -->
-  <g transform="translate(312 92) rotate(35)">
-    <path d="M0 0 C 36 -6 60 18 56 56 C 18 60 -6 36 0 0 Z" fill="#e7ecdd"/>
-    <path d="M6 50 C 18 30 34 16 52 8" stroke="#7f8c66" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <rect width="512" height="512" rx="112" fill="#f3efe8"/>
+  <circle cx="256" cy="256" r="150" fill="none" stroke="#1f1d1a" stroke-width="18"/>
+  <!-- listek wyśrodkowany -->
+  <g transform="translate(256 256)">
+    <path d="M0 -86 C 56 -52 56 52 0 86 C -56 52 -56 -52 0 -86 Z" fill="#1f1d1a"/>
+    <path d="M0 -70 V 70" stroke="#f3efe8" stroke-width="11" stroke-linecap="round"/>
   </g>
 </svg>
