@@ -499,7 +499,10 @@ function loadS(){
 function saveS(s){localStorage.setItem(KEY,JSON.stringify(s))}
 let state=loadS();
 if(!PROFILES[state.active])state.active="julia";
-let currentDay=null,currentDayObj=null,sessionDone=new Set(),trackTotal=0;
+let currentDay=null,currentDayObj=null,sessionDone=new Set(),trackTotal=0,currentView="plan";
+/* Zapis bieżącego ekranu i treningu w toku — dzięki temu po zabiciu apki przez
+   iOS (np. po obejrzeniu filmu) wracasz dokładnie tam, gdzie byłaś. */
+function saveSession(){state.ui={view:currentView,day:currentDay,done:[...sessionDone]};saveS(state);}
 function activeProfile(){return PROFILES[state.active]}
 function pstate(){return state.profiles[state.active]}
 
@@ -596,7 +599,7 @@ function exCard(it,sec,tid,num){
     <div class="acts">${btns}</div>`;
   el.querySelector('.vid').onclick=()=>showVideo(it);
   el.querySelector('.tm').onclick=()=>openTimer(it.n,it.t||30);
-  if(sec.track){const ck=el.querySelector('.ck');ck.onclick=()=>toggleEx(tid,el,ck);}
+  if(sec.track){el.dataset.tid=tid;const ck=el.querySelector('.ck');ck.onclick=()=>toggleEx(tid,el,ck);}
   if(imgFolder){
     const box=el.querySelector('.animbox.photo');let failed=false;
     box.querySelectorAll('img').forEach(im=>im.onerror=()=>{
@@ -625,11 +628,12 @@ function startWorkout(k){
   updateWProg();
   document.getElementById('finishBtn').onclick=finishWorkout;
   switchView('workout');
+  saveSession();
 }
 function toggleEx(tid,el,ck){
   if(sessionDone.has(tid)){sessionDone.delete(tid);el.classList.remove('checked');ck.textContent="Zrobione";}
   else{sessionDone.add(tid);el.classList.add('checked');ck.textContent="Ukończone";if(navigator.vibrate)navigator.vibrate(12);}
-  updateWProg();
+  updateWProg();saveSession();
 }
 function updateWProg(){
   const pct=trackTotal?Math.round(sessionDone.size/trackTotal*100):0;
@@ -641,6 +645,7 @@ function updateWProg(){
 }
 function finishWorkout(){
   pstate().log.unshift({day:currentDay,wk:weekKey(),ts:Date.now()});
+  currentDay=null;currentDayObj=null;sessionDone=new Set();
   saveS(state);renderStats();renderDays();renderProgress();
   toast("Brawo! Trening zaliczony");
   if(navigator.vibrate)navigator.vibrate([25,35,25]);
@@ -722,10 +727,12 @@ document.getElementById('timerClose').onclick=()=>{clearInterval(tInt);tRunning=
 
 /* ====================== NAV ====================== */
 function switchView(v){
+  currentView=v;
   document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
   document.getElementById('v-'+v).classList.add('active');
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
   window.scrollTo(0,0);
+  saveSession();
 }
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
   if(b.dataset.view==='workout'&&!currentDay){startWorkout(activeProfile().days[0].key);return;}
@@ -737,7 +744,7 @@ function setProfile(id){
   if(!PROFILES[id]||id===state.active)return;
   state.active=id;saveS(state);
   currentDay=null;currentDayObj=null;sessionDone=new Set();
-  renderAll();switchView('plan');
+  renderAll();switchView('plan');saveSession();
 }
 document.querySelectorAll('#profSwitch button').forEach(b=>b.onclick=()=>setProfile(b.dataset.prof));
 
@@ -747,7 +754,25 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm("Wyczyścić histori
 
 /* ====================== INIT ====================== */
 function renderAll(){renderHeader();renderStats();renderDays();renderTips();renderProgList();renderProgress();}
+/* Odtworzenie ekranu/treningu po restarcie apki (np. iOS po obejrzeniu filmu) */
+function restoreSession(){
+  const ui=state.ui;if(!ui)return;
+  if(ui.view==='workout'&&ui.day&&activeProfile().days.some(d=>d.key===ui.day)){
+    startWorkout(ui.day);
+    sessionDone=new Set(ui.done||[]);
+    document.querySelectorAll('#exList .ex[data-tid]').forEach(el=>{
+      if(sessionDone.has(Number(el.dataset.tid))){
+        el.classList.add('checked');
+        const ck=el.querySelector('.ck');if(ck)ck.textContent="Ukończone";
+      }
+    });
+    updateWProg();saveSession();
+    return;
+  }
+  if(ui.view==='progress')switchView('progress');
+}
 renderAll();
+restoreSession();
 </script>
 </body>
 </html>
