@@ -713,6 +713,7 @@ function startTimer(){
     tLeft=Math.max(0,Math.round((tEnd-Date.now())/1000));
     document.getElementById('timerStart').textContent="Wznów";return;
   }
+  unlockAudio();
   if(tLeft<=0)tLeft=tDur;
   tRunning=true;tEnd=Date.now()+tLeft*1000;
   document.getElementById('timerStart').textContent="Pauza";
@@ -735,7 +736,11 @@ function tickTimer(){
 }
 /* Po powrocie do apki natychmiast odśwież/zakończ odliczanie. */
 document.addEventListener('visibilitychange',()=>{if(tRunning&&!document.hidden)tickTimer();});
-function beep(){try{const a=new(window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),g=a.createGain();o.connect(g);g.connect(a.destination);o.frequency.value=820;o.type='sine';g.gain.setValueAtTime(.25,a.currentTime);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+.5);o.start();o.stop(a.currentTime+.5);}catch(e){}}
+/* iPhone wymaga odblokowania dźwięku gestem — jeden wspólny kontekst audio,
+   "obudzony" przy kliknięciu Start, żeby sygnał końca na pewno zadzwonił. */
+let audioCtx=null;
+function unlockAudio(){try{if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();}catch(e){}}
+function beep(){try{unlockAudio();if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);o.frequency.value=820;o.type='sine';g.gain.setValueAtTime(.25,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+.5);o.start();o.stop(audioCtx.currentTime+.5);}catch(e){}}
 document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{document.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));c.classList.add('active');clearInterval(tInt);tRunning=false;document.getElementById('timerStart').textContent="Start";setDur(+c.dataset.sec);});
 document.getElementById('timerStart').onclick=startTimer;
 document.getElementById('timerClose').onclick=()=>{clearInterval(tInt);tRunning=false;document.getElementById('timerStart').textContent="Start";document.getElementById('timerModal').classList.remove('open');};
