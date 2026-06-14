@@ -684,7 +684,15 @@ function renderProgress(){
 /* ====================== FILMY ====================== */
 function showVideo(e){
   const q=encodeURIComponent((e.yt||e.n)+" instruktaż");
-  window.open("https://www.youtube.com/results?search_query="+q,"_blank");
+  const url="https://www.youtube.com/results?search_query="+q;
+  // Otwarcie przez <a target=_blank> zamiast window.open — na iPhonie (apka na
+  // ekranie głównym) YouTube otwiera się w nakładce Safari, a apka zostaje żywa
+  // w tle, więc wracasz do niej w tym samym stanie zamiast restartu od zera.
+  const a=document.createElement('a');
+  a.href=url; a.target="_blank"; a.rel="noopener noreferrer";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
 }
 
 /* ====================== TIMER ====================== */
