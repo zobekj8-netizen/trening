@@ -491,7 +491,7 @@ function loadS(){
   try{const old=JSON.parse(localStorage.getItem("fitdom_v2"));if(old&&Array.isArray(old.log))base.profiles.julia.log=old.log;}catch(e){}
   return base;
 }
-function saveS(s){localStorage.setItem(KEY,JSON.stringify(s))}
+function saveS(s){try{localStorage.setItem(KEY,JSON.stringify(s))}catch(e){/* tryb prywatny / pełna pamięć — nie blokuj apki */}}
 let state=loadS();
 if(!PROFILES[state.active])state.active="julia";
 let currentDay=null,currentDayObj=null,sessionDone=new Set(),trackTotal=0,currentView="plan";
@@ -696,7 +696,7 @@ function showVideo(e){
 }
 
 /* ====================== TIMER ====================== */
-let tInt=null,tLeft=30,tDur=30,tRunning=false;const ringLen=515;
+let tInt=null,tLeft=30,tDur=30,tRunning=false,tEnd=0;const ringLen=515;
 function openTimer(name,secs){
   document.getElementById('timerLbl').textContent=name||"Przerwa";
   document.getElementById('timerModal').classList.add('open');
@@ -708,13 +708,33 @@ function setDur(s){tDur=s;tLeft=s;drawT();}
 function fmt(s){return Math.floor(s/60)+":"+String(s%60).padStart(2,'0')}
 function drawT(){document.getElementById('timerTime').textContent=fmt(tLeft);document.getElementById('ring').style.strokeDashoffset=ringLen*(1-tLeft/tDur);}
 function startTimer(){
-  if(tRunning){clearInterval(tInt);tRunning=false;document.getElementById('timerStart').textContent="Wznów";return;}
-  tRunning=true;document.getElementById('timerStart').textContent="Pauza";
-  tInt=setInterval(()=>{
-    tLeft--;drawT();
-    if(tLeft<=0){clearInterval(tInt);tRunning=false;document.getElementById('timerStart').textContent="Start";document.getElementById('timerTime').textContent="Koniec";beep();if(navigator.vibrate)navigator.vibrate([90,50,90]);tLeft=tDur;}
-  },1000);
+  if(tRunning){ // pauza
+    clearInterval(tInt);tRunning=false;
+    tLeft=Math.max(0,Math.round((tEnd-Date.now())/1000));
+    document.getElementById('timerStart').textContent="Wznów";return;
+  }
+  if(tLeft<=0)tLeft=tDur;
+  tRunning=true;tEnd=Date.now()+tLeft*1000;
+  document.getElementById('timerStart').textContent="Pauza";
+  tInt=setInterval(tickTimer,200);
+  tickTimer();
 }
+/* Liczymy z bezwzględnego czasu końca (Date.now), więc odliczanie jest
+   dokładne nawet gdy iOS uśpi apkę przy zgaszonym ekranie. */
+function tickTimer(){
+  const done=Date.now()>=tEnd;
+  tLeft=Math.max(0,Math.round((tEnd-Date.now())/1000));
+  drawT();
+  if(done){
+    clearInterval(tInt);tRunning=false;
+    document.getElementById('timerStart').textContent="Start";
+    document.getElementById('timerTime').textContent="Koniec";
+    beep();if(navigator.vibrate)navigator.vibrate([90,50,90]);
+    tLeft=tDur;
+  }
+}
+/* Po powrocie do apki natychmiast odśwież/zakończ odliczanie. */
+document.addEventListener('visibilitychange',()=>{if(tRunning&&!document.hidden)tickTimer();});
 function beep(){try{const a=new(window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),g=a.createGain();o.connect(g);g.connect(a.destination);o.frequency.value=820;o.type='sine';g.gain.setValueAtTime(.25,a.currentTime);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+.5);o.start();o.stop(a.currentTime+.5);}catch(e){}}
 document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{document.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));c.classList.add('active');clearInterval(tInt);tRunning=false;document.getElementById('timerStart').textContent="Start";setDur(+c.dataset.sec);});
 document.getElementById('timerStart').onclick=startTimer;
