@@ -22,8 +22,10 @@
     --muted:#a8a193;
     --line:#e8e1d4;
     --line2:#ddd4c4;
-    --accent:#7f8c66;
-    --accent-soft:#e7ecdd;
+    --accent:#6b9080;
+    --accent-soft:#dfeae5;
+    --accent2:#e08a5d;
+    --accent2-soft:#f8e8dc;
     --serif:'Helvetica Neue',Helvetica,Arial,sans-serif;
     --shadow:0 1px 2px rgba(80,65,45,.03),0 10px 30px rgba(80,65,45,.05);
   }
@@ -32,7 +34,8 @@
   body{
     min-height:100%;
     font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;
-    background:var(--bg);color:var(--ink);line-height:1.6;
+    background:radial-gradient(125% 380px at 50% -70px,#f7ede2 0%,var(--bg) 62%) no-repeat,var(--bg);
+    color:var(--ink);line-height:1.6;
     overflow-x:hidden;-webkit-font-smoothing:antialiased;
     padding-bottom:calc(110px + env(safe-area-inset-bottom,0px));
   }
@@ -47,6 +50,7 @@
   .stat{flex:1;padding:16px 8px;text-align:center;position:relative}
   .stat+.stat::before{content:"";position:absolute;left:0;top:22%;bottom:22%;width:1px;background:var(--line)}
   .stat b{display:block;font-family:var(--serif);font-size:25px;font-weight:500;color:var(--ink)}
+  #stStreak{color:var(--accent2)}
   .stat small{color:var(--muted);font-size:10.5px;font-weight:500;letter-spacing:.3px;margin-top:2px;display:block}
 
   .view{display:none;animation:fade .3s ease}
@@ -66,7 +70,8 @@
   .day .meta{color:var(--muted);font-size:12.5px;margin-top:2px;letter-spacing:.2px}
   .day .meta .done{color:var(--accent);font-weight:600}
   .day .chev{margin-left:auto;color:var(--line2);font-size:24px;font-weight:300}
-  .day.done-today{border-color:var(--accent-soft);background:#faf6f0}
+  .day.done-today{border-color:var(--accent);background:#f5faf8;box-shadow:0 1px 2px rgba(80,65,45,.03),0 8px 24px rgba(107,144,128,.14)}
+  .accent-dot.done{background:var(--accent2-soft);color:var(--accent2)}
 
   /* WORKOUT */
   #workoutHead{margin:22px 0 6px}
@@ -92,7 +97,7 @@
   .btn.ghost:active{background:var(--card2)}
   .btn.fill{background:var(--accent);color:#fff}
   .btn.fill:active{filter:brightness(.95)}
-  .ex.checked .btn.fill{background:#9aa783}
+  .ex.checked .btn.fill{background:#9bb8ac}
 
   .animbox{margin:15px 0 2px;background:#f6f1e9;border:1px solid var(--line);border-radius:16px;overflow:hidden;position:relative}
   .animbox .hint{position:absolute;top:9px;right:12px;font-size:9px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;font-weight:600;z-index:2}
@@ -543,14 +548,14 @@ function renderDays(){
     const el=document.createElement('div');
     el.className="day "+d.cls+(did?" done-today":"");
     el.innerHTML=`<div class="row">
-        <div class="accent-dot">${idx+1}</div>
+        <div class="accent-dot${did?' done':''}">${did?'✓':idx+1}</div>
         <div>
           <h3>${d.title}</h3>
           <div class="meta">${count} ćwiczeń · ~${d.est} min ${did?'· <span class="done">zrobione</span>':''}</div>
         </div>
         <div class="chev">›</div>
       </div>`;
-    el.onclick=()=>startWorkout(d.key);
+    el.onclick=()=>{if(navigator.vibrate)navigator.vibrate(10);startWorkout(d.key);};
     wrap.appendChild(el);
   });
 }
