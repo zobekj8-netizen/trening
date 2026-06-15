@@ -697,6 +697,11 @@ function showVideo(e){
 
 /* ====================== TIMER ====================== */
 let tInt=null,tLeft=30,tDur=30,tRunning=false,tEnd=0;const ringLen=515;
+/* Wake Lock: trzymamy ekran włączony w trakcie odliczania, żeby iOS nie uśpił
+   apki i dzwonek końca zagrał na czas (po wygaszeniu ekranu JS jest wstrzymany). */
+let wakeLock=null;
+async function acquireWake(){try{if('wakeLock'in navigator&&!wakeLock){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',()=>{wakeLock=null;});}}catch(e){}}
+async function releaseWake(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 function openTimer(name,secs){
   document.getElementById('timerLbl').textContent=name||"Przerwa";
   document.getElementById('timerModal').classList.add('open');
@@ -709,11 +714,11 @@ function fmt(s){return Math.floor(s/60)+":"+String(s%60).padStart(2,'0')}
 function drawT(){document.getElementById('timerTime').textContent=fmt(tLeft);document.getElementById('ring').style.strokeDashoffset=ringLen*(1-tLeft/tDur);}
 function startTimer(){
   if(tRunning){ // pauza
-    clearInterval(tInt);tRunning=false;
+    clearInterval(tInt);tRunning=false;releaseWake();
     tLeft=Math.max(0,Math.round((tEnd-Date.now())/1000));
     document.getElementById('timerStart').textContent="Wznów";return;
   }
-  unlockAudio();
+  unlockAudio();acquireWake();
   if(tLeft<=0)tLeft=tDur;
   tRunning=true;tEnd=Date.now()+tLeft*1000;
   document.getElementById('timerStart').textContent="Pauza";
@@ -727,7 +732,7 @@ function tickTimer(){
   tLeft=Math.max(0,Math.round((tEnd-Date.now())/1000));
   drawT();
   if(done){
-    clearInterval(tInt);tRunning=false;
+    clearInterval(tInt);tRunning=false;releaseWake();
     document.getElementById('timerStart').textContent="Start";
     document.getElementById('timerTime').textContent="Koniec";
     beep();if(navigator.vibrate)navigator.vibrate([90,50,90]);
@@ -735,7 +740,7 @@ function tickTimer(){
   }
 }
 /* Po powrocie do apki natychmiast odśwież/zakończ odliczanie. */
-document.addEventListener('visibilitychange',()=>{if(tRunning&&!document.hidden)tickTimer();});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&tRunning){acquireWake();tickTimer();}});
 /* Niezawodny dźwięk końca timera: prawdziwy plik audio. Element <audio> gra na
    iPhonie także przy wyciszonym przełączniku dzwonka (Web Audio było wyciszane).
    Odblokowujemy go gestem przy kliknięciu Start. */
@@ -743,9 +748,9 @@ const dingEl=new Audio("data:audio/wav;base64,UklGRqgSAABXQVZFZm10IBAAAAABAAEAES
 dingEl.preload="auto";
 function unlockAudio(){try{dingEl.muted=true;const p=dingEl.play();if(p&&p.then)p.then(()=>{dingEl.pause();dingEl.currentTime=0;dingEl.muted=false;}).catch(()=>{dingEl.muted=false;});}catch(e){}}
 function beep(){try{dingEl.currentTime=0;dingEl.muted=false;const p=dingEl.play();if(p&&p.catch)p.catch(()=>{});}catch(e){}}
-document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{document.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));c.classList.add('active');clearInterval(tInt);tRunning=false;document.getElementById('timerStart').textContent="Start";setDur(+c.dataset.sec);});
+document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{document.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));c.classList.add('active');clearInterval(tInt);tRunning=false;releaseWake();document.getElementById('timerStart').textContent="Start";setDur(+c.dataset.sec);});
 document.getElementById('timerStart').onclick=startTimer;
-document.getElementById('timerClose').onclick=()=>{clearInterval(tInt);tRunning=false;document.getElementById('timerStart').textContent="Start";document.getElementById('timerModal').classList.remove('open');};
+document.getElementById('timerClose').onclick=()=>{clearInterval(tInt);tRunning=false;releaseWake();document.getElementById('timerStart').textContent="Start";document.getElementById('timerModal').classList.remove('open');};
 
 /* ====================== NAV ====================== */
 function switchView(v){
