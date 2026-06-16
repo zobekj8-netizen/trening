@@ -1,7 +1,7 @@
 /* FitDom service worker.
    - Pliki apki (HTML/JS/manifest/ikony): network-first → auto-aktualizacja.
    - Zdjęcia ćwiczeń z CDN: cache-first → działają offline i ładują się od razu. */
-const CACHE = "fitdom-cache-v1";
+const CACHE = "fitdom-cache-v6";
 const IMG_CACHE = "fitdom-img-v1";
 const ASSETS = [
   "./", "./index.html", "./manifest.json",
